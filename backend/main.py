@@ -11,10 +11,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/calculate-routes", response_model=RouteResponse)
-async def calculate_routes(request: RouteRequest):
+# CHANGED: Endpoint is now exactly /route as requested by Role 5
+@app.post("/route", response_model=RouteResponse) 
+async def get_route(request: RouteRequest):
     try:
-        # Mock A* Response matching the frontend contract
         astar_result = AlgorithmMetrics(
             path=[[request.start_lat, request.start_lon], [23.3500, 85.3150]],
             execution_time=0.012,
@@ -22,7 +22,6 @@ async def calculate_routes(request: RouteRequest):
             distance=3840.2
         )
 
-        # Mock Q-Learning Response matching the frontend contract
         q_learning_result = AlgorithmMetrics(
             path=[[request.start_lat, request.start_lon], [23.3480, 85.3200]],
             execution_time=0.034,
