@@ -1,18 +1,18 @@
 from pydantic import BaseModel
-from typing import List, Tuple
+from typing import List
 
 class RouteRequest(BaseModel):
-    start_node: int
-    end_node: int
+    start_lat: float
+    start_lon: float
+    end_lat: float
+    end_lon: float
 
-class AlgorithmResult(BaseModel):
-    algorithm_name: str
-    path: List[int]
-    distance_km: float
-    execution_time_ms: float
-    simulated_time_min: float
+class AlgorithmMetrics(BaseModel):
+    path: List[List[float]]
+    execution_time: float
+    travel_time: float
+    distance: float
 
 class RouteResponse(BaseModel):
-    start_node: int
-    end_node: int
-    results: List[AlgorithmResult]
+    astar: AlgorithmMetrics
+    q_learning: AlgorithmMetrics
