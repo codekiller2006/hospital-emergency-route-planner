@@ -1,32 +1,47 @@
 """
-Role 3: Reinforcement Learning Route Planner (Q-Learning)
+Role 3: Reinforcement Learning Route Planner (Q-Learning with Reward Shaping)
 
 Fulfills the "compare at least two AI approaches" rubric requirement by
 providing a Q-Learning based alternative to Role 2's A* search.
+This version uses Reward Shaping (Haversine distance) to solve the sparse 
+reward problem in large real-world city graphs.
 """
 
 import time
 import random
+import math
 from collections import defaultdict
 import networkx as nx
+
+EARTH_RADIUS_M = 6371000.0
+
+def haversine_dist(lat1, lon1, lat2, lon2):
+    """Calculate the great-circle distance between two points."""
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    d_phi = math.radians(lat2 - lat1)
+    d_lambda = math.radians(lon2 - lon1)
+    a = math.sin(d_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
+    return EARTH_RADIUS_M * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
 
 class QLearningRouter:
     """
     Q-Learning based dynamic router over a NetworkX/OSMnx MultiDiGraph.
+    Incorporates Reward Shaping to guide the agent towards the goal.
     """
 
     def __init__(
         self,
         graph,
-        alpha=0.2,          # learning rate
-        gamma=0.9,          # discount factor
-        epsilon=0.3,        # exploration rate (decays over training)
-        epsilon_decay=0.995,
+        alpha=0.3,          # Increased learning rate
+        gamma=0.95,         # Increased discount factor for longer horizons
+        epsilon=0.5,        # Higher initial exploration
+        epsilon_decay=0.99,
         min_epsilon=0.05,
-        episodes=500,
-        max_steps_per_episode=200,
-        traffic_penalty=500.0,   # extra cost (seconds) added when hitting a jam
-        seed=None,
+        episodes=1000,      # Increased episodes for larger maps
+        max_steps_per_episode=800, # Increased step limit
+        traffic_penalty=500.0,
+        seed=42,
     ):
         self.graph = graph
         self.alpha = alpha
@@ -72,8 +87,14 @@ class QLearningRouter:
 
         return cost, reward
 
+    def _get_node_coords(self, node):
+        node_data = self.graph.nodes[node]
+        return node_data.get('y', 0.0), node_data.get('x', 0.0)
+
     def train(self, start, goal):
-        goal_reward = 1000.0 
+        goal_reward = 2000.0 
+        
+        goal_lat, goal_lon = self._get_node_coords(goal)
 
         for episode in range(self.episodes):
             state = start
@@ -89,7 +110,7 @@ class QLearningRouter:
                 else:
                     q_values = self.Q[state]
                     unexplored = [a for a in actions if a not in q_values]
-                    if unexplored and random.random() < 0.5:
+                    if unexplored and random.random() < 0.3:
                         action = random.choice(unexplored)
                     else:
                         action = max(actions, key=lambda a: q_values.get(a, 0.0))
@@ -97,11 +118,22 @@ class QLearningRouter:
                 next_state = action
                 _, reward = self._step_cost_and_reward(state, next_state)
 
+                # REWARD SHAPING: Give a bonus if moving physically closer to the goal
+                state_lat, state_lon = self._get_node_coords(state)
+                next_lat, next_lon = self._get_node_coords(next_state)
+                
+                dist_current = haversine_dist(state_lat, state_lon, goal_lat, goal_lon)
+                dist_next = haversine_dist(next_lat, next_lon, goal_lat, goal_lon)
+                
+                # If distance decreases, shaping_reward is positive
+                shaping_reward = (dist_current - dist_next) * 1.5 
+                reward += shaping_reward
+
                 if next_state == goal:
                     reward += goal_reward
 
                 if next_state in visited_this_episode:
-                    reward -= 50.0
+                    reward -= 100.0 # Heavier penalty for loops
 
                 best_next_q = max(
                     self.Q[next_state].values(), default=0.0
@@ -118,7 +150,7 @@ class QLearningRouter:
 
             self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
 
-    def extract_path(self, start, goal, max_steps=500):
+    def extract_path(self, start, goal, max_steps=1000):
         path = [start]
         state = start
         total_time = 0.0
