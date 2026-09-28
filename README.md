@@ -1,8 +1,8 @@
-# 🏥 Hospital Emergency Route Planner
+#  Hospital Emergency Route Planner
 
 An intelligent emergency route planning system designed to compare the performance of **A* Search** and **Q-Learning** algorithms in dynamic, real-world traffic conditions. This project uses the actual street network of Hyderabad, India, layering simulated traffic congestion and road closures to evaluate how different AI approaches handle emergency vehicle routing.
 
-## 🚀 Key Features
+##  Key Features
 * **Real-World Graph Routing:** Built on top of OSMnx and NetworkX to process actual city street data.
 * **Dynamic Traffic Simulation:** Generates multiple environmental states (light traffic, heavy traffic, road closures).
 * **AI Algorithm Comparison:** 
@@ -10,14 +10,14 @@ An intelligent emergency route planning system designed to compare the performan
   * **Q-Learning:** Implements reward shaping (Haversine distance) to navigate massive state spaces.
 * **Interactive Dashboard:** Streamlit and Folium frontend for real-time visualization and metric comparisons.
 
-## 🛠️ Tech Stack
+##  Tech Stack
 * **Backend:** FastAPI, Python, Pydantic
 * **Frontend:** Streamlit, Folium, Leaflet
 * **Data & Algorithms:** OSMnx, NetworkX, scikit-learn, Pandas, Matplotlib
 
 ---
 
-## ⚙️ Local Setup & Installation
+##  Local Setup & Installation
 
 Due to GitHub's file size limits, the massive 165MB+ city graph files are not tracked in this repository. **You must generate the local data before starting the servers.**
 
